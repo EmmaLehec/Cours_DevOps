@@ -6,9 +6,11 @@ services:
             SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
             SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
         networks:
-            - app-network
+            - front-network
+            - back-network
         depends_on:
-            - database
+            database:
+                condition: service_healthy
         restart: unless-stopped
 
     database:
@@ -20,21 +22,30 @@ services:
         volumes:
             - pgdata:/var/lib/postgresql/data
         networks:
-            - app-network
+            - back-network
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+            interval: 5s
+            timeout: 5s
+            retries: 10
         restart: unless-stopped
 
     httpd:
         build: ./httpd
+        environment:
+            BACKEND_HOST: ${BACKEND_HOST}
+            BACKEND_PORT: ${BACKEND_PORT}
         ports:
             - "80:80"
         networks:
-            - app-network
+            - front-network
         depends_on:
             - backend
         restart: unless-stopped
 
 networks:
-    app-network:
+    front-network:
+    back-network:
 
 volumes:
     pgdata:
