@@ -43,7 +43,7 @@ jobs:
       - name: SonarCloud analysis
         run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=EmmaLehec_Cours_DevOps -Dsonar.organization=emmalehec -Dsonar.host.url=https://sonarcloud.io -Dsonar.token=${{ secrets.SONAR_TOKEN }} --file ./simpleapi/pom.xml
 
-  # ===== JOB 2 : construire et publier les images Docker =====
+    # ===== JOB 2 : construire et publier les images Docker =====
   build-and-push-docker-image:
     # Ne démarre que si test-backend a réussi (code qui compile + tests OK)
     needs: test-backend
@@ -54,33 +54,43 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Calcule le SHA court du commit (7 premiers caractères, comme git log --oneline)
+      # et le stocke dans la variable d'environnement SHORT_SHA pour les étapes suivantes
+      - name: Get short commit SHA
+        run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
+
       # Connexion à Docker Hub avec les identifiants stockés dans les secrets GitHub
       - name: Login to DockerHub
         run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login --username ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
 
-      # Build de l'image du backend (Dockerfile multistage de ./simpleapi)
+      # Build et push de l'image du backend
+      # Deux tags : "latest" (dernière version) et le SHA du commit (historique des versions)
       - name: Build image and push backend
         uses: docker/build-push-action@v6
         with:
-          # Dossier contenant le Dockerfile
           context: ./simpleapi
-          # Nom de l'image sur Docker Hub (tout en minuscules)
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/tp-devops-simple-api:latest
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/tp-devops-simple-api:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/tp-devops-simple-api:${{ env.SHORT_SHA }}
           # Build sur toutes les branches, mais publie uniquement sur main
           push: ${{ github.ref == 'refs/heads/main' }}
 
-      # Build de l'image de la base de données (Postgres + scripts SQL)
+      # Build et push de l'image de la base de données
       - name: Build image and push database
         uses: docker/build-push-action@v6
         with:
           context: ./database
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/tp-devops-database:latest
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/tp-devops-database:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/tp-devops-database:${{ env.SHORT_SHA }}
           push: ${{ github.ref == 'refs/heads/main' }}
 
-      # Build de l'image du reverse proxy (Apache + config)
+      # Build et push de l'image du reverse proxy
       - name: Build image and push httpd
         uses: docker/build-push-action@v6
         with:
           context: ./httpd
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/tp-devops-httpd:latest
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/tp-devops-httpd:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/tp-devops-httpd:${{ env.SHORT_SHA }}
           push: ${{ github.ref == 'refs/heads/main' }}
