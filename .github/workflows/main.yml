@@ -41,7 +41,7 @@ jobs:
       # sonar.host.url : adresse du serveur SonarCloud
       # sonar.login : token d'authentification, stocké dans les secrets GitHub
       - name: SonarCloud analysis
-        run: mvn -B verify sonar:sonar -Dsonar.projectKey=EmmaLehec_Cours_DevOps -Dsonar.organization=emmalehec -Dsonar.host.url=https://sonarcloud.io -Dsonar.login=${{ secrets.SONAR_TOKEN }} --file ./simpleapi/pom.xml
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=EmmaLehec_Cours_DevOps -Dsonar.organization=emmalehec -Dsonar.host.url=https://sonarcloud.io -Dsonar.login=${{ secrets.SONAR_TOKEN }} --file ./simpleapi/pom.xml
 
   # ===== JOB 2 : construire et publier les images Docker =====
   build-and-push-docker-image:
