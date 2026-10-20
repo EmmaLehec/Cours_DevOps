@@ -275,7 +275,7 @@ docker pull emmalehec/tp-backend:1.0
 ## 1-10 Why do we put our images into an online repo?
 
 On publie une image en ligne afin qu'elle soit partagée et utilisable par d'autres personnes. 
-Cela permet aussi de la déployer en étant téléchargée par un serveur de production, ce qui peut aussi être automatisé (CI/CD). 
+Cela permet aussi de la déployer après avoir été récupérée par un serveur de production, ce qui peut aussi être automatisé (CI/CD). 
 On peut également suivre les versions des images.
 Et l'image est aussi sauvegardé ailleurs que sur la machine. 
 
@@ -283,4 +283,18 @@ Et l'image est aussi sauvegardé ailleurs que sur la machine.
 
 ## 2-1 What are testcontainers?
 
-Les testcontainers sont une librairie Java qui permettent de lancer des containers Docker temporaires lors des tests. Un container PostgreSQL démarre automatiquement lors de "mvn clean verify" pour vérifier que les données sont bien insérées lors du test. 
+Les testcontainers sont une librairie Java qui permettent de lancer des containers Docker temporaires lors des tests. Un container PostgreSQL démarre automatiquement lors de "mvn clean verify" pour vérifier que les données sont bien insérées lors du test.
+
+## 2-2 For what purpose do we need to use secured variables ?
+
+Pour se connecter à Docker Hub la pipeline a besoin de l'identifiant et du token. On ne mets pas ces deux informations sur le main.yml puisqu'il sera push et elles seraient donc visibles par tout le monde. N'importe qui pourrait push et supprimer mes images sur mon compte Docker Hub.
+
+## 2-3 Why did we put needs: build-and-test-backend on this job? Maybe try without this and you will see!
+
+On ajoute la section needs, car sinon les jobs des test s'exécutent en parallèle. Needs permet de s'assurer que le job de test-backend est terminé avant de lancer le job de build-and-push-docker-image.
+
+## 2-4 For what purpose do we need to push docker images?
+
+On publie les images sur Docker Hub afin qu'elles soient sauvegardé en dehors de la pipeline, puisque GitHub détruit les images après les avoir créées.
+Elles peuvent être ensuite récupérées (docker pull) par un quelqu'un de l'équipe ou par le serveur de production afin d'être déployée.
+A chaque fois qu'on push sur main sur GitHub, nos images seront publiées automatiquement sur le Docker Hub, c'est le Continuous Delivery (CD). 
