@@ -55,7 +55,7 @@ cd TP
 docker compose up -d --build
 ```
 
-# Rapport
+# Rapport TP1
 
 ## 1-1 For which reason is it better to run the container with a flag -e to give the environment variables rather than put them directly in the Dockerfile?
 
@@ -278,3 +278,9 @@ On publie une image en ligne afin qu'elle soit partagée et utilisable par d'aut
 Cela permet aussi de la déployer en étant téléchargée par un serveur de production, ce qui peut aussi être automatisé (CI/CD). 
 On peut également suivre les versions des images.
 Et l'image est aussi sauvegardé ailleurs que sur la machine. 
+
+# Rapport TP2
+
+## 2-1 What are testcontainers?
+
+Les testcontainers sont une librairie Java qui permettent de lancer des containers Docker temporaires lors des tests. Un container PostgreSQL démarre automatiquement lors de "mvn clean verify" pour vérifier que les données sont bien insérées lors du test. 

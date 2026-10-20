@@ -29,4 +29,4 @@ jobs:
 
       # Compile l'application et lance les tests unitaires et d'intégration
       - name: Build and test with Maven
-        run: mvn clean verify --file ./TP/simpleapi/pom.xml
+        run: mvn clean verify --file ./simpleapi/pom.xml
