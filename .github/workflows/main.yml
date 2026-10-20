@@ -10,6 +10,7 @@ on:
   pull_request:
 
 jobs:
+  # ===== JOB 1 : compiler et tester le backend =====
   test-backend:
     # Machine virtuelle Ubuntu fournie par GitHub
     runs-on: ubuntu-24.04
@@ -30,3 +31,45 @@ jobs:
       # Compile l'application et lance les tests unitaires et d'intégration
       - name: Build and test with Maven
         run: mvn clean verify --file ./simpleapi/pom.xml
+
+  # ===== JOB 2 : construire et publier les images Docker =====
+  build-and-push-docker-image:
+    # Ne démarre que si test-backend a réussi (code qui compile + tests OK)
+    needs: test-backend
+    runs-on: ubuntu-24.04
+
+    steps:
+      # Récupère le code du dépôt (chaque job repart d'une machine vierge)
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Connexion à Docker Hub avec les identifiants stockés dans les secrets GitHub
+      - name: Login to DockerHub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login --username ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+
+      # Build de l'image du backend (Dockerfile multistage de ./simpleapi)
+      - name: Build image and push backend
+        uses: docker/build-push-action@v6
+        with:
+          # Dossier contenant le Dockerfile
+          context: ./simpleapi
+          # Nom de l'image sur Docker Hub (tout en minuscules)
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/tp-devops-simple-api:latest
+          # Build sur toutes les branches, mais publie uniquement sur main
+          push: ${{ github.ref == 'refs/heads/main' }}
+
+      # Build de l'image de la base de données (Postgres + scripts SQL)
+      - name: Build image and push database
+        uses: docker/build-push-action@v6
+        with:
+          context: ./database
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/tp-devops-database:latest
+          push: ${{ github.ref == 'refs/heads/main' }}
+
+      # Build de l'image du reverse proxy (Apache + config)
+      - name: Build image and push httpd
+        uses: docker/build-push-action@v6
+        with:
+          context: ./httpd
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/tp-devops-httpd:latest
+          push: ${{ github.ref == 'refs/heads/main' }}
