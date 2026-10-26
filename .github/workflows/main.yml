@@ -94,3 +94,42 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/tp-devops-httpd:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/tp-devops-httpd:${{ env.SHORT_SHA }}
           push: ${{ github.ref == 'refs/heads/main' }}
+  
+    # ===== JOB 3 : déployer l'application sur le serveur avec Ansible =====
+  deploy:
+    # Ne démarre que si les images ont été construites et publiées
+    needs: build-and-push-docker-image
+    # Déploie uniquement depuis main (les autres branches ne publient pas d'images)
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+
+    steps:
+      # Récupère le code (dont le dossier ansible/)
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Installe Ansible et la collection qui contient les modules docker_*
+      - name: Install Ansible
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible
+          ansible-galaxy collection install community.docker
+
+      # Écrit la clé SSH (stockée dans les secrets GitHub) dans un fichier
+      # et ajoute l'empreinte du serveur aux hôtes connus, pour que SSH accepte la connexion
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan emma.lehec.takima.school >> ~/.ssh/known_hosts
+
+      # Lance le playbook : installe/vérifie Docker, puis (re)lance les conteneurs
+      # avec les dernières images publiées sur Docker Hub (pull: true)
+      # -e remplace les variables de l'inventaire : chemin de la clé sur la machine GitHub
+      - name: Deploy with Ansible
+        working-directory: ./ansible
+        run: |
+          ansible-playbook -i inventories/setup.yml playbook.yml \
+            -e "ansible_ssh_private_key_file=$HOME/.ssh/id_rsa" \
+            -e "postgres_password=${{ secrets.POSTGRES_PASSWORD }}"

@@ -1,0 +1,18 @@
+---
+# Lance le reverse proxy Apache
+- name: Run httpd
+  community.docker.docker_container:
+    name: httpd
+    image: "{{ docker_hub_user }}/tp-devops-httpd:latest"
+    pull: true
+    # Adresse du backend vers lequel rediriger les requêtes
+    env:
+      BACKEND_HOST: "{{ backend_host }}"
+      BACKEND_PORT: "{{ backend_port | string }}"
+    # Seul conteneur exposé : port 80 du serveur -> port 80 du conteneur
+    published_ports:
+      - "80:80"
+    networks:
+      - name: front-network
+    restart_policy: unless-stopped
+    state: started

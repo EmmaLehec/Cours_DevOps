@@ -1,0 +1,19 @@
+- hosts: all
+  gather_facts: true
+  become: true
+
+  roles:
+    - docker
+
+    - role: network
+      vars:
+        ansible_python_interpreter: /opt/docker_venv/bin/python3
+    - role: database
+      vars:
+        ansible_python_interpreter: /opt/docker_venv/bin/python3
+    - role: app
+      vars:
+        ansible_python_interpreter: /opt/docker_venv/bin/python3
+    - role: proxy
+      vars:
+        ansible_python_interpreter: /opt/docker_venv/bin/python3
