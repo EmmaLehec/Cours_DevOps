@@ -9,6 +9,8 @@
     env:
       BACKEND_HOST: "{{ backend_host }}"
       BACKEND_PORT: "{{ backend_port | string }}"
+      FRONT_HOST: "{{ front_host }}"
+      FRONT_PORT: "{{ front_port | string }}"
     # Seul conteneur exposé : port 80 du serveur -> port 80 du conteneur
     published_ports:
       - "80:80"

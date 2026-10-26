@@ -15,6 +15,11 @@ all:
     # Adresse du backend pour le reverse proxy
     backend_host: backend
     backend_port: 8080
+
+    # Adresse du front pour le reverse proxy
+    front_host: front
+    front_port: 80
+    
   children:
     prod:
       hosts:

@@ -1,0 +1,12 @@
+---
+# Lance le conteneur du front-end
+- name: Run front
+  community.docker.docker_container:
+    name: front
+    image: "{{ docker_hub_user }}/tp-devops-front:latest"
+    pull: true
+    # Uniquement sur le réseau front : seul le proxy y accède
+    networks:
+      - name: front-network
+    restart_policy: unless-stopped
+    state: started
