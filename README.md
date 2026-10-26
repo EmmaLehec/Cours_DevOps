@@ -298,3 +298,36 @@ On ajoute la section needs, car sinon les jobs des test s'exécutent en parallè
 On publie les images sur Docker Hub afin qu'elles soient sauvegardé en dehors de la pipeline, puisque GitHub détruit les images après les avoir créées.
 Elles peuvent être ensuite récupérées (docker pull) par un quelqu'un de l'équipe ou par le serveur de production afin d'être déployée.
 A chaque fois qu'on push sur main sur GitHub, nos images seront publiées automatiquement sur le Docker Hub, c'est le Continuous Delivery (CD). 
+
+# Rapport TP3
+
+## 3-1 Document your inventory and base commands
+
+L'inventaire (setup.yml) décrit les serveurs de Ansible et leurs paramètres de connexion.
+
+all:
+  vars: -> variables communes à tous les serveurs
+    ansible_user: admin
+    -> utilisateur SSH
+
+    ansible_ssh_private_key_file: /home/emma/.ssh/id_rsa
+    -> chemin de la clé privée SSH
+
+  children:
+    prod:
+    -> groupe prod pour regrouper pls serveurs par rôle
+
+      hosts:
+        emma.lehec.takima.school:
+
+Commandes de base :
+
+ansible all -i inventories/setup.yml -m ping
+-> vérifie que serveur est joignable et authentification fonctionne
+
+ansible all -i inventories/setup.yml -m setup -a "filter=ansible_distribution*"
+-> récupère facts/infos découvertes sur le serveur, filtrées par des facts uniquement sur la distribution Linux
+
+ansible all -i inventories/setup.yml -m apt -a "name=apache2 state=absent" --become
+-> on désinstalle Apache (état voulu : absent). Au 1er lancement, on a le résultat changed puisqu'Apache est désinstallé, et au 2e lancement, on a le résultat SUCCESS puisqu'Apache était déjà désinstallé, il ne fait donc rien.
+
