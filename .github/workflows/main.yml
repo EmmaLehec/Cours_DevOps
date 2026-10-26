@@ -134,12 +134,14 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan emma.lehec.takima.school >> ~/.ssh/known_hosts
 
-      # Lance le playbook : installe/vérifie Docker, puis (re)lance les conteneurs
-      # avec les dernières images publiées sur Docker Hub (pull: true)
-      # -e remplace les variables de l'inventaire : chemin de la clé sur la machine GitHub
+      # Lance le playbook Ansible
+      # Le mot de passe du vault (secret GitHub) est écrit dans un fichier temporaire,
+      # qu'Ansible utilise pour déchiffrer inventories/group_vars/all/vault.yml
       - name: Deploy with Ansible
         working-directory: ./ansible
         run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > .vault_pass
           ansible-playbook -i inventories/setup.yml playbook.yml \
             -e "ansible_ssh_private_key_file=$HOME/.ssh/id_rsa" \
-            -e "postgres_password=${{ secrets.POSTGRES_PASSWORD }}"
+            --vault-password-file .vault_pass
+          rm -f .vault_pass

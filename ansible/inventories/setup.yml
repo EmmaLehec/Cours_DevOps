@@ -10,7 +10,6 @@ all:
     # Paramètres de la base de données
     postgres_db: db
     postgres_user: usr
-    postgres_password: pwd
 
     # Adresse du backend pour le reverse proxy
     backend_host: backend
@@ -19,7 +18,7 @@ all:
     # Adresse du front pour le reverse proxy
     front_host: front
     front_port: 80
-    
+
   children:
     prod:
       hosts:
