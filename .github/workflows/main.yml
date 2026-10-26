@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - main
-      - develop
+      - dev
   # Lance aussi la pipeline à chaque pull request
   pull_request:
 
@@ -93,6 +93,16 @@ jobs:
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/tp-devops-httpd:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/tp-devops-httpd:${{ env.SHORT_SHA }}
+          push: ${{ github.ref == 'refs/heads/main' }}
+      
+      # Build et push de l'image du front
+      - name: Build image and push front
+        uses: docker/build-push-action@v6
+        with:
+          context: ./front
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/tp-devops-front:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/tp-devops-front:${{ env.SHORT_SHA }}
           push: ${{ github.ref == 'refs/heads/main' }}
   
     # ===== JOB 3 : déployer l'application sur le serveur avec Ansible =====
