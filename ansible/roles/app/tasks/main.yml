@@ -1,0 +1,18 @@
+---
+# Lance le backend Spring Boot
+- name: Run backend
+  community.docker.docker_container:
+    name: backend
+    image: "{{ docker_hub_user }}/tp-devops-simple-api:latest"
+    pull: true
+    # Connexion à la base : "database" = nom du conteneur sur le réseau back
+    env:
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://database:5432/{{ postgres_db }}"
+      SPRING_DATASOURCE_USERNAME: "{{ postgres_user }}"
+      SPRING_DATASOURCE_PASSWORD: "{{ postgres_password }}"
+    # Sur les deux réseaux : joint la base (back) et est joint par le proxy (front)
+    networks:
+      - name: front-network
+      - name: back-network
+    restart_policy: unless-stopped
+    state: started

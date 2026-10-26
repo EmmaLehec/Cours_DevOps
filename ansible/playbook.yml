@@ -1,63 +1,19 @@
 - hosts: all
-  # Récupère les facts (on a besoin de la version de Debian)
   gather_facts: true
   become: true
 
-  tasks:
-    # Installe les paquets nécessaires à l'installation de Docker
-    - name: Install required packages
-      apt:
-        name:
-          - apt-transport-https
-          - ca-certificates
-          - curl
-          - gnupg
-          - lsb-release
-          - python3-venv
-        state: latest
-        update_cache: yes
+  roles:
+    - docker
 
-    # Ajoute la clé GPG officielle de Docker (pour vérifier les paquets téléchargés)
-    - name: Add Docker GPG key
-      apt_key:
-        url: https://download.docker.com/linux/debian/gpg
-        state: present
-
-    # Ajoute le dépôt officiel de Docker
-    # distribution_release = version de Debian découverte dans les facts (ex: bookworm)
-    - name: Add Docker APT repository
-      apt_repository:
-        repo: "deb [arch=amd64] https://download.docker.com/linux/debian {{ ansible_facts['distribution_release'] }} stable"
-        state: present
-        update_cache: yes
-
-    # Installe Docker
-    - name: Install Docker
-      apt:
-        name: docker-ce
-        state: present
-
-    # Installe Python3 et pip
-    - name: Install Python3 and pip3
-      apt:
-        name:
-          - python3
-          - python3-pip
-        state: present
-
-    # Crée un environnement virtuel Python pour le SDK Docker
-    - name: Create a virtual environment for Docker SDK
-      command: python3 -m venv /opt/docker_venv
-      args:
-        creates: /opt/docker_venv  # Ne s'exécute que si le dossier n'existe pas
-
-    # Installe le SDK Docker pour Python (nécessaire aux modules Ansible docker_*)
-    - name: Install Docker SDK for Python in virtual environment
-      command: /opt/docker_venv/bin/pip install docker
-
-    # Vérifie que Docker tourne
-    - name: Make sure Docker is running
-      service:
-        name: docker
-        state: started
-      tags: docker
+    - role: network
+      vars:
+        ansible_python_interpreter: /opt/docker_venv/bin/python3
+    - role: database
+      vars:
+        ansible_python_interpreter: /opt/docker_venv/bin/python3
+    - role: app
+      vars:
+        ansible_python_interpreter: /opt/docker_venv/bin/python3
+    - role: proxy
+      vars:
+        ansible_python_interpreter: /opt/docker_venv/bin/python3

@@ -1,0 +1,21 @@
+---
+# Lance le conteneur PostgreSQL
+- name: Run database
+  community.docker.docker_container:
+    name: database
+    image: "{{ docker_hub_user }}/tp-devops-database:latest"
+    # Télécharge la dernière version de l'image à chaque déploiement
+    pull: true
+    # Identifiants de la base
+    env:
+      POSTGRES_DB: "{{ postgres_db }}"
+      POSTGRES_USER: "{{ postgres_user }}"
+      POSTGRES_PASSWORD: "{{ postgres_password }}"
+    # Volume pour que les données persistent
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # Uniquement sur le réseau back : seul le backend peut la joindre
+    networks:
+      - name: back-network
+    restart_policy: unless-stopped
+    state: started

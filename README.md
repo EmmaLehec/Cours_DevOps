@@ -301,7 +301,7 @@ A chaque fois qu'on push sur main sur GitHub, nos images seront publiées automa
 
 # Rapport TP3
 
-## 3-1 Document your inventory and base commands
+## 3-1 Document your inventory and base commands ?
 
 L'inventaire (setup.yml) décrit les serveurs de Ansible et leurs paramètres de connexion.
 
@@ -331,3 +331,166 @@ ansible all -i inventories/setup.yml -m setup -a "filter=ansible_distribution*"
 ansible all -i inventories/setup.yml -m apt -a "name=apache2 state=absent" --become
 -> on désinstalle Apache (état voulu : absent). Au 1er lancement, on a le résultat changed puisqu'Apache est désinstallé, et au 2e lancement, on a le résultat SUCCESS puisqu'Apache était déjà désinstallé, il ne fait donc rien.
 
+## 3-2 Document your playbook ?
+
+- hosts: all
+  -> playbook s'exécute sur tous les serveurs de l'inventaire
+
+  gather_facts: true
+  -> récupère les facts
+
+  become: true
+  -> exécute les tâches en admin
+
+  roles:
+    - docker
+    -> tâches sont organisées en rôle, ici "docker"
+
+Les tâches sont décrites dans roles\docker\tasks\main.yml :
+- rôle "docker" : installer les prérequis, ajouter la clée GPG, ajouter le dépôt Docker, installer Docker, créer environnement virtuel Python avec SDK Docker, vérifier que Docker tourne.
+
+
+## 3-3 Document your docker_container tasks configuration ?
+
+ansible/roles/
+├── database/tasks/main.yml   docker_container pour base de données
+├── app/tasks/main.yml        docker_container pour backend
+└── proxy/tasks/main.yml      docker_container pour httpd
+
+database/tasks/main.yml : lance le conteneur PostgreSQL
+
+- name: Run database
+
+  community.docker.docker_container:
+    name: database
+    -> nom container
+
+    image: "{{ docker_hub_user }}/tp-devops-database:latest"
+    -> image à utiliser (sur Docker Hub)
+
+    pull: true
+    -> télécharge la dernière version de l'image à chaque déploiement
+
+    env:
+    -> identifiants de la base
+
+      POSTGRES_DB: "{{ postgres_db }}"
+      -> nom de la base
+
+      POSTGRES_USER: "{{ postgres_user }}"
+      -> nom du user
+
+      POSTGRES_PASSWORD: "{{ postgres_password }}"
+      -> mdp
+      
+    
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      -> volume pour que les données persistent
+
+    networks:
+      - name: back-network
+      -> database juste sur le réseau back
+
+    restart_policy: unless-stopped
+    -> redémarre tjrs sauf si arrêt volontaire
+
+    state: started
+    -> container doit exister et démarrer
+
+
+app/tasks/main.yml : lance le backend Spring Boot
+
+- name: Run backend
+
+  community.docker.docker_container:
+    name: backend
+    -> nom container
+
+    image: "{{ docker_hub_user }}/tp-devops-simple-api:latest"
+    -> image à utiliser (sur Docker Hub)
+
+    pull: true
+    -> télécharge la dernière version de l'image à chaque déploiement
+
+    env:
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://database:5432/{{ postgres_db }}"
+      -> URL de connexion à la base
+
+      SPRING_DATASOURCE_USERNAME: "{{ postgres_user }}"
+      SPRING_DATASOURCE_PASSWORD: "{{ postgres_password }}"
+      -> identifiants
+
+    networks:
+      - name: front-network
+      - name: back-network
+      -> app sur le réseau back et front pour joindre la base et être joint par le proxy
+
+    restart_policy: unless-stopped
+    -> redémarre tjrs sauf si arrêt volontaire
+
+    state: started
+    -> container doit exister et démarrer
+
+proxy/tasks/main.yml : lance le reverse proxy Apache
+
+- name: Run httpd
+
+  community.docker.docker_container:
+    name: httpd
+    -> nom container
+
+    image: "{{ docker_hub_user }}/tp-devops-httpd:latest"
+    -> image à utiliser (sur Docker Hub)
+
+    pull: true
+    -> télécharge la dernière version de l'image à chaque déploiement
+
+    env:
+      BACKEND_HOST: "{{ backend_host }}"
+      BACKEND_PORT: "{{ backend_port | string }}"
+      -> nom et port du backend sur lequel redirigé les requêtes
+      (-> string pour convertir en txt car var d'env doivent être des chaines)
+
+    published_ports:
+      - "80:80"
+      -> relie ports 80 du serveur au port 80 du container
+
+    networks:
+      - name: front-network
+      -> proxy juste sur le réseau front
+
+    restart_policy: unless-stopped
+    -> redémarre tjrs sauf si arrêt volontaire
+
+    state: started
+    -> container doit exister et démarrer
+
+Nouveau playbook :
+- hosts: all
+  gather_facts: true
+  become: true
+
+  roles:
+    - docker
+    -> installe Docker sur le serveur
+
+    - role: network
+      vars:
+        ansible_python_interpreter: /opt/docker_venv/bin/python3
+        -> crée front-network et back-network
+
+    - role: database
+      vars:
+        ansible_python_interpreter: /opt/docker_venv/bin/python3
+        -> lance le conteneur Postgres
+
+    - role: app
+      vars:
+        ansible_python_interpreter: /opt/docker_venv/bin/python3
+        -> lance le conteneur backend
+
+    - role: proxy
+      vars:
+        ansible_python_interpreter: /opt/docker_venv/bin/python3
+        -> lance le conteneur httpd (port 80)

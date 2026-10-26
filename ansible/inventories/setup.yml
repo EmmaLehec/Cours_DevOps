@@ -1,7 +1,20 @@
 all:
   vars:
+    # Connexion SSH
     ansible_user: admin
     ansible_ssh_private_key_file: /home/emma/.ssh/id_rsa
+
+    # Compte Docker Hub où sont publiées les images
+    docker_hub_user: emmalehec
+
+    # Paramètres de la base de données
+    postgres_db: db
+    postgres_user: usr
+    postgres_password: pwd
+
+    # Adresse du backend pour le reverse proxy
+    backend_host: backend
+    backend_port: 8080
   children:
     prod:
       hosts:
